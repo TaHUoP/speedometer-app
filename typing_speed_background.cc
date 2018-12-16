@@ -10,13 +10,13 @@ HHOOK _hook;
 
 KBDLLHOOKSTRUCT kbdStruct;
 
-int keypress_count;
+std::atomic<unsigned int> keypress_counter;
 
 LRESULT __stdcall HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	if (nCode >= 0 && wParam == WM_KEYDOWN)
 	{
-		keypress_count++;	
+		keypress_counter++;	
 	}
  
 	return CallNextHookEx(_hook, nCode, wParam, lParam);
@@ -43,11 +43,13 @@ int main()
 	using namespace std::chrono_literals;
 	
 	constexpr auto sleepTime = 200ms;
+	constexpr int typing_coeficient = 60s/sleepTime;
+	
 	auto now = std::chrono::system_clock::now();
 	
 	if ((comport = fopen("COM3", "wt")) == NULL)
 	{
-		printf("Failed to open the communication port COM2\n");
+		printf("Failed to open the communication port COM3\n");
 		printf("The port may be disabled or in use\n");
 		int wait=getch();
 		return 1;
@@ -59,14 +61,12 @@ int main()
 		std::this_thread::sleep_until(now+sleepTime);
 		now = std::chrono::system_clock::now();
 		
-		speed = keypress_count*300; //TODO: calculate coeficient
+		speed = keypress_counter.exchange(0)*typing_coeficient;
 		
 		printf("\r%d              ", speed);
 		
 		fflush(comport);
 		fputc(speed, comport);
-		
-		keypress_count = 0;
 	}
 		
 	t1.join();
