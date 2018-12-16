@@ -5,6 +5,7 @@
 #include <chrono>
 #include <conio.h>
 #include <thread>
+#include <numeric> 
  
 HHOOK _hook;
 
@@ -38,7 +39,7 @@ int main()
 	std::thread t1(catch_keypress);
 		
 	FILE *comport;
-	int speed;
+	int avg_speed;
 	
 	using namespace std::chrono_literals;
 	
@@ -46,6 +47,10 @@ int main()
 	constexpr int typing_coeficient = 60s/sleepTime;
 	
 	auto now = std::chrono::system_clock::now();
+	
+	constexpr std::size_t smoothingNum = 20;
+	std::array<unsigned int, smoothingNum> SpeedBuf = {0};
+	std::size_t ringIdx = 0;
 	
 	if ((comport = fopen("COM3", "wt")) == NULL)
 	{
@@ -61,12 +66,15 @@ int main()
 		std::this_thread::sleep_until(now+sleepTime);
 		now = std::chrono::system_clock::now();
 		
-		speed = keypress_counter.exchange(0)*typing_coeficient;
+		SpeedBuf[ringIdx] = keypress_counter.exchange(0)*typing_coeficient;
+		ringIdx = (ringIdx + 1) % smoothingNum;
 		
-		printf("\r%d              ", speed);
+		avg_speed = std::accumulate(SpeedBuf.cbegin(), SpeedBuf.cend(), 0)/smoothingNum;
+		
+		printf("\r%d              ", avg_speed);
 		
 		fflush(comport);
-		fputc(speed, comport);
+		fputc(avg_speed, comport);
 	}
 		
 	t1.join();
