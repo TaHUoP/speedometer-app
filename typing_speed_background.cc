@@ -51,11 +51,16 @@ int main()
 	constexpr std::size_t smoothingNum = 20;
 	std::array<unsigned int, smoothingNum> SpeedBuf = {0};
 	std::size_t ringIdx = 0;
-	
-	if ((comport = fopen("COM3", "wt")) == NULL)
+
+    //TODO: detect com port automatically (requires hardware changes)
+    std::cout << "Enter COM number: ";
+    int com_num = 0;
+    std::cin >> com_num;
+
+	if ((comport = fopen(("COM" + std::to_string(com_num)).c_str(), "wt")) == NULL)
 	{
-		printf("Failed to open the communication port COM3\n");
-		printf("The port may be disabled or in use\n");
+	    std::cout << "Failed to open the communication port COM" << com_num << std::endl;
+	    std::cout << "The port may be disabled or in use" << std::endl;
 		int wait=getch();
 		return 1;
 	}
