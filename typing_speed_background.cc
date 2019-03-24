@@ -40,7 +40,11 @@ int main()
 		
 	FILE *comport;
 	int avg_speed;
-	
+	int normal_speed;
+	//speed now is normalized by 100 at first and by max speed if it becomes more than 100
+	//TODO: make max_speed decrease with time if current speed is significantly lower
+	int max_speed = 0;
+
 	using namespace std::chrono_literals;
 	
 	constexpr auto sleepTime = 200ms;
@@ -75,11 +79,16 @@ int main()
 		ringIdx = (ringIdx + 1) % smoothingNum;
 		
 		avg_speed = std::accumulate(SpeedBuf.cbegin(), SpeedBuf.cend(), 0)/smoothingNum;
-		
-		printf("\r%d              ", avg_speed);
+		if (avg_speed > max_speed) {
+		    max_speed = avg_speed;
+		}
+
+		normal_speed = ((avg_speed * 100)/ max_speed);
+
+		printf("\r%d              ", normal_speed);
 		
 		fflush(comport);
-		fputc(avg_speed, comport);
+		fputc(normal_speed, comport);
 	}
 		
 	t1.join();
